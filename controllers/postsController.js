@@ -24,7 +24,7 @@ const checkValidation = asyncHandler(async (req) => {
 const getPosts = asyncHandler(async (req, res) => {
   const posts = await Post.find({});
   if (!posts) {
-    res.status(400);
+    res.status(400).json({ success: false, error: "Couldn't fetch posts" });
     throw new Error("Couldn't fetch posts");
   }
   res.status(200).json({ success: true, data: posts });
@@ -36,13 +36,16 @@ const getPosts = asyncHandler(async (req, res) => {
 const createPost = asyncHandler(async (req, res) => {
   const validation = await checkValidation(req);
   if (validation !== 200) {
-    res.status(validation);
+    res.status(validation).json({ success: false, error: "No validation" });
     throw new Error("No validation");
   }
   const posterId = req.user._id;
   const { title, description, content } = req.body;
   if (!title || !content || !description) {
-    res.status(403);
+    res.status(403).json({
+      success: false,
+      error: "Cannot create a post without a title or content",
+    });
     throw new Error("Cannot create a post without a title or content");
   }
 
@@ -64,12 +67,12 @@ const createPost = asyncHandler(async (req, res) => {
 const getPost = asyncHandler(async (req, res) => {
   const id = req.params.id;
   if (!id) {
-    res.status(400);
+    res.status(400).json({ success: false, error: "ID is required" });
     throw new Error("ID is required");
   }
   const post = await Post.findById(id);
   if (!post) {
-    res.status(404);
+    res.status(404).json({ success: false, error: "Couldn't find post" });
     throw new Error("Couldn't find post");
   }
   res.status(200).json({ success: true, data: post });
@@ -81,29 +84,31 @@ const getPost = asyncHandler(async (req, res) => {
 const updatePost = asyncHandler(async (req, res) => {
   const validation = await checkValidation(req);
   if (validation !== 200) {
-    res.status(validation);
+    res.status(validation).json({ success: false, error: "No validation" });
     throw new Error("No validation");
   }
   const id = req.params.id;
   if (!id) {
-    res.status(403);
+    res.status(403).json({ success: false, error: "ID is required" });
     throw new Error("ID is required");
   }
   const requesterID = req.user._id;
   const post = await Post.findById(id);
   if (!post) {
-    res.status(404);
+    res.status(404).json({ success: false, error: "Cannot find post" });
     throw new Error("Cannot find post");
   }
   const user = await User.findById(requesterID);
   if (!user.isAdmin && post.owner_id !== requesterID) {
-    res.status(403);
+    res.status(403).json({ success: false, error: "User cannot update post" });
     throw new Error("User cannot update post");
   }
 
   const { title, content, description } = req.body;
   if (!title && !content && !description) {
-    res.status(403);
+    res
+      .status(403)
+      .json({ success: false, error: "Invalid update request parameters" });
     throw new Error("Invalid update request parameters");
   }
   if (title) post.title = title;
@@ -112,7 +117,7 @@ const updatePost = asyncHandler(async (req, res) => {
   post.edited_at = Date.now();
   const updatedPost = await Post.findOneAndUpdate(id, post);
   if (!updatedPost) {
-    res.status(500);
+    res.status(500).json({ success: false, error: "Failed to update post" });
     throw new Error("Failed to update post");
   }
   res.status(200).json({ success: true, data: post });
@@ -124,25 +129,27 @@ const updatePost = asyncHandler(async (req, res) => {
 const deletePost = asyncHandler(async (req, res) => {
   const validation = await checkValidation(req);
   if (validation !== 200) {
-    res.status(validation);
+    res.status(validation).json({ success: false, error: "No validation" });
     throw new Error("No validation");
   }
   const id = req.params.id;
   if (!id) {
-    res.status(403);
+    res.status(403).json({ success: false, error: "ID is required" });
     throw new Error("ID is required");
   }
   const requesterID = req.user._id;
 
   const post = await Post.findById(id);
   if (!post) {
-    res.status(404);
+    res.status(404).json({ success: false, error: "Cannot find post" });
     throw new Error("Cannot find post");
   }
   const user = await User.findById(requesterID);
 
   if (post.owner_id !== requesterID && !user.isAdmin) {
-    res.status(401);
+    res
+      .status(401)
+      .json({ success: false, error: "User cannot delete this post" });
     throw new Error("User cannot delete this post");
   }
   await Comment.deleteMany({ _id: { $in: post.comments } });
@@ -157,7 +164,7 @@ const deletePost = asyncHandler(async (req, res) => {
 const getPostsLight = asyncHandler(async (req, res) => {
   const posts = await Post.find({});
   if (!posts) {
-    res.status(404);
+    res.status(404).json({ success: false, error: "Cannot fetch posts" });
     throw new Error("Cannot fetch posts");
   }
   const lightPosts = posts.map((post) => ({
@@ -178,17 +185,17 @@ const getPostsLight = asyncHandler(async (req, res) => {
 const upvotePost = asyncHandler(async (req, res) => {
   const validation = await checkValidation(req);
   if (validation !== 200) {
-    res.status(validation);
+    res.status(validation).json({ success: false, error: "No validation" });
     throw new Error("No validation");
   }
   const id = req.params.id;
   if (!id) {
-    res.status(403);
+    res.status(403).json({ success: false, error: "Invalid parameters" });
     throw new Error("Invalid parameters");
   }
   const post = await Post.findById(id);
   if (!post) {
-    res.status(404);
+    res.status(404).json({ success: false, error: "No post found" });
     throw new Error("No post found");
   }
   post.rating++;
@@ -202,17 +209,17 @@ const upvotePost = asyncHandler(async (req, res) => {
 const downvotePost = asyncHandler(async (req, res) => {
   const validation = await checkValidation(req);
   if (validation !== 200) {
-    res.status(validation);
+    res.status(validation).json({ success: false, error: "No validation" });
     throw new Error("No validation");
   }
   const id = req.params.id;
   if (!id) {
-    res.status(403);
+    res.status(403).json({ success: false, error: "Invalid parameters" });
     throw new Error("Invalid parameters");
   }
   const post = await Post.findById(id);
   if (!post) {
-    res.status(404);
+    res.status(404).json({ success: false, error: "No post found" });
     throw new Error("No post found");
   }
   post.rating--;
