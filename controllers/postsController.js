@@ -22,6 +22,7 @@ const checkValidation = asyncHandler(async (req) => {
 //@route GET /
 //@access public
 const getPosts = asyncHandler(async (req, res) => {
+  console.log("GETTING posts");
   const posts = await Post.find({});
   if (!posts) {
     res.status(400).json({ success: false, error: "Couldn't fetch posts" });
