@@ -18,5 +18,5 @@ app.use("/comments/", require("./routes/commentsRoute"));
 app.use(require("./middleware/errorHandler"));
 
 app.listen(port, () => {
-  console.log(`Server listening on ${port}`);
+  console.log(`Server listening on ${port}, certified`);
 });
